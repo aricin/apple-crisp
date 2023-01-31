@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Apple Crisp - Play with your friends</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="styles.css"  type="text/css" >
+</head>
+<body>
+    <div id="game-container">
+        <div id="pile-container"></div>
+        <div id="your-gameboard">
+            <div id="your-deck" class="your-cards"></div>
+            <div id="your-next-card" class="your-cards"></div>
+            <div id="your-play-piles">
+                <div id="your-play-pile-1" class="your-cards"></div>
+                <div id="your-play-pile-2" class="your-cards"></div> <!-- TODO: Create these dynamically -->
+                <div id="your-play-pile-3" class="your-cards"></div>
+            </div>
+            <div id="your-blitz-pile" class="your-cards"></div>
+        </div>
+        <div id="community-board"></div>
+    </div>
+    <script type="module" src="/main.js"></script>
+</body>
+</html>

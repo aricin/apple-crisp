@@ -1,0 +1,105 @@
+* { 
+	box-sizing: border-box;
+    /* border: 3px solid red; */
+}
+
+html {
+	height: 100%;
+    background-image: url("/pokerfelt.svg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+	color: #fff;
+}
+
+body {
+    height: 100%;
+    margin: 0;  
+}
+
+
+#game-container {
+    height: 100%;
+    border: 3px solid red;
+}
+
+/* Community Game Board */
+#pile-container {
+    position: fixed;
+    left: 50%;
+    transform: translate(-50%);
+    height: 70%;
+    width: 70%;
+    border: 3px solid red;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+/* Client Game Board */
+#your-gameboard {
+    position: fixed;
+    max-width: 100%;
+    width: 800px;
+    height: 30%;
+    left: 50%;
+    bottom: 0%;
+    transform: translate(-50%);
+    display: flex;
+    justify-content: space-between;
+    border: 3px solid red;
+}
+.your-cards {
+    background-size: cover;
+    background-position: center;
+    width: 103px;
+    height: 138px;
+}
+.community-cards {
+    margin: 5px;
+}
+#dragging-card {
+    position: absolute;
+    left: 300;
+}
+.active-piles {
+    cursor: pointer;
+}
+#your-deck {
+
+}
+#your-next-card {
+
+}
+#your-play-piles {
+    display: flex;
+    width: 50%;
+    justify-content: space-evenly;
+}
+
+
+
+/* Animations */
+@keyframes draw-animation {
+    from {
+        transform: rotateY(-20deg);
+    }
+    to {
+        transform: rotateY(0deg);
+    }
+}
+.draw-animation {
+    animation: draw-animation 0.1s ease-out;
+}
+
+@keyframes reset-deck {
+    from {
+        transform: translateX(150px);
+    }
+    to {
+        transform: translateX(0px);
+    }
+}
+.reset-deck {
+    animation: reset-deck 0.3s ease-out;
+}
