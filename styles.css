@@ -10,13 +10,13 @@ html {
     background-size: cover;
     background-position: center;
 	color: #fff;
+    overflow: hidden;
 }
 
 body {
     height: 100%;
     margin: 0;  
 }
-
 
 #game-container {
     height: 100%;
@@ -40,7 +40,7 @@ body {
 #your-gameboard {
     position: fixed;
     max-width: 100%;
-    width: 800px;
+    width: 1000px;
     height: 30%;
     left: 50%;
     bottom: 0%;
@@ -73,7 +73,7 @@ body {
 }
 #your-play-piles {
     display: flex;
-    width: 50%;
+    width: 60%;
     justify-content: space-evenly;
 }
 

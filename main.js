@@ -1,28 +1,37 @@
+// Values used for constructing a deck of cards
 const suits = ["Clubs", "Diamond", "Hearts", "Spades"];
-const values = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"];
+const values = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
 
 
 let gameBoard;      // Entire game board including opponents
 let pileContainer;  // Community piles
 let yourDeck;       // Your main deck that you draw from
 let yourNextCard;   // Your face up pile that you draw cards to
+let yourPlayPiles;
 let yourPlayPile1;  // The piles that you can move cards around in
 let yourPlayPile2;  //
-let yourPlayPile3;  // 
+let yourPlayPile3;
+let yourPlayPile4;
+let yourPlayPile5;  // 
 let yourBlitzPile;  // The objective cards (if you empty it the game is over)
-let activePiles;    // Array of piles that have one or more cards that can be moved
 let draggingCard;   // The card that is currently being dragged by the user
+
 let isDragging;     // True if a card is currently being dragged
 let startMouseX;    // X value of mouse when clicked
 let startMouseY;    // Y value of mouse when clicked
 let startPile;      // The origin pile of the card currently being dragged
 let pileCount;      // Number of piles in community board
-let validPlacement = true;
+let validPlacement; // True if the user is dragging a card over a pile where it is allowed to be dropped
 
 
+const NUM_BLITZ_CARDS = 10;
 const NUM_PLAY_PILES = 3; // TODO: Make this dependant on the number of players
 
-
+/**
+ * Constructs an in order deck of cards into an array, 
+ * with each card taking the form {value: value, suit: suit}
+ * @returns {Array} deck
+ */
 function buildDeck() {
     let deck = [];
 
@@ -35,7 +44,11 @@ function buildDeck() {
     return deck;
 }
 
-function shuffleDeck(deck) { //Fisher–Yates shuffle
+/**
+ * Uses Fisher-Yates shuffle to fairly randomize a deck.
+ * @returns {Array} deck
+ */
+function shuffleDeck(deck) {
     let m = deck.length, t, i;
   
     // While there remain elements to shuffle…
@@ -67,15 +80,14 @@ function get_card_img(card) {
 /**
  * Adds the given card to the specified pile
  * @param  {Card} card Card object containing a 'suit' and 'value
- * @param  {Pile} pile Pile object representing the face-up piles on
- * the gameboard. Contains a 'cards' array and a 'div' element.
+ * @param  {Pile} pile
  */
 function add_card_to_pile(card, pile) {
     if (pile.cards.length == 0) {
-        activePiles.push(pile);
+        pile.active = true;
     }
     pile.cards.push(card);
-    pile.element.style.backgroundImage = get_card_img(card);
+    pile.style.backgroundImage = get_card_img(card);
 }
 
 /**
@@ -84,68 +96,58 @@ function add_card_to_pile(card, pile) {
  * @param  {Pile} pile Pile object representing the face-up piles on
  * the gameboard. Contains a 'cards' array and a 'div' element.
  */
-function remove_card_from_pile(pile) { // TODO: remove from active pile when empty
+function remove_card_from_pile(pile) {
     let poppedCard = pile.cards.pop();
     let topCard = pile.cards[pile.cards.length - 1];
 
     if (pile.cards.length == 0) {
-        pile.element.style.backgroundImage = null;
-        remove_active_pile(pile);
+        pile.style.backgroundImage = null;
+        pile.active = false;
     } else {
-        if (!(pile.element.id == "your-deck")) {
-            pile.element.style.backgroundImage = get_card_img(topCard);
+        if (!(pile.id == "your-deck")) {
+            pile.style.backgroundImage = get_card_img(topCard);
         } 
     }
     
     return poppedCard;
 }
 
-// Removes the given pile from the array of active piles
-function remove_active_pile(pile) {
-    // Loop through activePiles and remove the pile that matches
-    for(let i = 0; i < activePiles.length; i++){ 
-        if (activePiles[i] === pile) { 
-            activePiles.splice(i, 1); 
-        }
-    }
-}
+
 
 /* ---- Dragging Stuff ---- */
 
-// Checks if the mouse is over a specified pile of cards
-function is_mouse_over(x, y, pile) {
-    let left = pile.element.getBoundingClientRect().left;
-    let right = pile.element.getBoundingClientRect().right;
-    let top = pile.element.getBoundingClientRect().top;
-    let bottom = pile.element.getBoundingClientRect().bottom;
+function is_valid_placement(pile) {
 
-    if (left <= x && right >= x && top <= y && bottom >= y) {
-        return true;
+    if (pile.classList.contains("community-cards")) {
+        if (pile.cards[pile.cards.length-1].suit == draggingCard.cards[0].suit && pile.cards[pile.cards.length-1].value == draggingCard.cards[0].value - 1) {
+            return true;
+        }    
+    } else if (pile.classList.contains("play-piles")) {
+        if (pile.cards[pile.cards.length-1].suit == draggingCard.cards[0].suit && pile.cards[pile.cards.length-1].value - 1 == draggingCard.cards[0].value) {
+            return true;
+        }    
+    } else {
+        return false;
     }
-
-    return false;
 }
 
 // The function run when the user clicks on the gameboard
 let mouse_down = function(e) {
     e.preventDefault();
 
-    startMouseX = parseInt(e.clientX);
-    startMouseY = parseInt(e.clientY);
-
-    for (let pile of activePiles) {
-        if(is_mouse_over(startMouseX, startMouseY, pile)) {
-            draggingCard.element.style.left =  `${pile.element.getBoundingClientRect().left}px`;
-            draggingCard.element.style.top = `${pile.element.getBoundingClientRect().top}px`;
-            let poppedCard = remove_card_from_pile(pile);
-            draggingCard.element.style.backgroundImage = get_card_img(poppedCard);
-            draggingCard.cards.push(poppedCard);
-            gameBoard.appendChild(draggingCard.element);
-            startPile = pile;
-            isDragging = true;
-        } else {
-            //console.log("no");
-        }
+    // If pile contains a movable card
+    if (e.target.active) {
+        startMouseX = parseInt(e.clientX);
+        startMouseY = parseInt(e.clientY);
+    
+        draggingCard.style.left =  `${e.target.getBoundingClientRect().left}px`;
+        draggingCard.style.top = `${e.target.getBoundingClientRect().top}px`;
+        let poppedCard = remove_card_from_pile(e.target);
+        draggingCard.style.backgroundImage = get_card_img(poppedCard);
+        draggingCard.cards.push(poppedCard);
+        gameBoard.appendChild(draggingCard);
+        startPile = e.target;
+        isDragging = true;
     }
 }
 
@@ -164,8 +166,9 @@ let mouse_move = function(e) {
         startMouseX = curMouseX;
         startMouseY = curMouseY;
 
-        draggingCard.element.style.left = `${parseInt(draggingCard.element.style.left) + dX}px`;
-        draggingCard.element.style.top = `${parseInt(draggingCard.element.style.top) + dY}px`;
+        draggingCard.style.left = `${parseInt(draggingCard.style.left) + dX}px`;
+        draggingCard.style.top = `${parseInt(draggingCard.style.top) + dY}px`;
+
     }
 }
 
@@ -174,57 +177,104 @@ let mouse_up = function(e) {
         return
     } else {
         e.preventDefault();
-        
-        if (validPlacement) {
-            let newPile = document.createElement("div");
-            newPile.id = `pile${pileCount}`;
-            newPile.classList.add("your-cards");
-            newPile.classList.add("community-cards");
-            newPile.style.backgroundImage = draggingCard.element.style.backgroundImage;
-            pileContainer.appendChild(newPile);
-            pileCount++;
+
+        let curMouseX = parseInt(e.clientX);
+        let curMouseY = parseInt(e.clientY);
+        let targetElements = document.elementsFromPoint(curMouseX, curMouseY);
+
+        if (targetElements.includes(pileContainer)) {
+            if (draggingCard.cards[0].value == 1) {
+                let newPile = document.createElement("div");
+                newPile.classList.add("your-cards");
+                newPile.classList.add("community-cards");
+                newPile.style.backgroundImage = draggingCard.style.backgroundImage;
+                newPile.cards = draggingCard.cards;
+                pileContainer.appendChild(newPile);
+                pileCount++;
+            } else if (is_valid_placement(targetElements[1])) {
+                add_card_to_pile(draggingCard.cards[0], targetElements[1])
+            } else {
+                console.log("NOPE");
+                add_card_to_pile(draggingCard.cards[0], startPile)
+            }
+        } else if (targetElements.includes(yourPlayPiles)) {
+            console.log(targetElements[1]);
+            if (targetElements[1].cards.length == 0) {
+                console.log("ZERO");
+                add_card_to_pile(draggingCard.cards[0], targetElements[1])
+            } else if (is_valid_placement(targetElements[1])) {
+                console.log("VALID");
+                add_card_to_pile(draggingCard.cards[0], targetElements[1])
+            } else {
+                console.log("NOPE");
+                add_card_to_pile(draggingCard.cards[0], startPile)
+            }
         } else {
+            console.log("NOPE");
             add_card_to_pile(draggingCard.cards[0], startPile)
         }
+        
 
-        gameBoard.removeChild(draggingCard.element);
+
+
+        // If the mouse is over the pile container
+            // If the current card is an ace
+            // If the target pile is -1 the current card
+
+
+        // If the mouse is over the play piles
+            // If the target pile is empty
+            // If the target pile is -1 the current card
+
+
+        gameBoard.removeChild(draggingCard);
         draggingCard.cards = [];
         isDragging = false;
 
     }
-
 }
 
-let mouse_out = function(e) { // Not sure what mouseout does
-    if (!isDragging) {
-        return
-    } else {
-        e.preventDefault();
-    }
-    isDragging = false;
-}
+let draw_card = function(e) {
+    e.preventDefault();
 
-let mouse_click = function(e) {
-    let curMouseX = parseInt(e.clientX);
-    let curMouseY = parseInt(e.clientY);
-
-    if (is_mouse_over(curMouseX, curMouseY, yourDeck) && yourDeck.cards.length != 0) {
+    if (yourDeck.cards.length != 0) {
         add_card_to_pile(remove_card_from_pile(yourDeck), yourNextCard);
-    }
-
-    if (is_mouse_over(curMouseX, curMouseY, yourNextCard) && yourDeck.cards.length == 0) {
+    } else if (yourDeck.cards.length == 0) {
         yourDeck.cards = yourNextCard.cards.reverse();
         yourNextCard.cards = [];
 
-        yourDeck.element.style.backgroundImage = "url('/card-pngs/Back\ Red\ 2.png')";
-        yourNextCard.element.style.backgroundImage = null;
+        yourDeck.style.backgroundImage = "url('/card-pngs/Back\ Red\ 2.png')";
+        yourNextCard.style.backgroundImage = null;
 
-        remove_active_pile(yourNextCard);
+        yourNextCard.active = false;
+    }
+}
+
+let reset_deck = function(e) {
+    console.log("hi");
+    if (yourDeck.cards.length == 0) {
+        yourDeck.cards = yourNextCard.cards.reverse();
+        yourNextCard.cards = [];
+
+        yourDeck.style.backgroundImage = "url('/card-pngs/Back\ Red\ 2.png')";
+        yourNextCard.style.backgroundImage = null;
+
+        yourNextCard.active = false;
     }
 }
 
 /* ---- Community Stuff ---- */
+let mouse_over = function(e) {
+    //e.preventDefault();
+    validPlacement = true;
+    console.log(e.target);
+}
 
+let mouse_leave = function(e) {
+    //e.preventDefault();
+    validPlacement = false;
+    console.log(validPlacement);
+}
 
 
 function new_game() {
@@ -233,37 +283,61 @@ function new_game() {
     // Initialize game elements
     gameBoard = document.getElementById("game-container");
     pileContainer = document.getElementById("pile-container");
-    yourDeck = {cards: deck, element: document.getElementById("your-deck")};
-    yourNextCard = {cards: [], element: document.getElementById("your-next-card")};
-    yourPlayPile1 = {cards: [], element: document.getElementById("your-play-pile-1")};
-    yourPlayPile2 = {cards: [], element: document.getElementById("your-play-pile-2")};
-    yourPlayPile3 = {cards: [], element: document.getElementById("your-play-pile-3")}; 
-    yourBlitzPile = {cards: [], element: document.getElementById("your-blitz-pile")};
+    yourDeck = document.getElementById("your-deck");
+    yourPlayPiles = document.getElementById("your-play-piles");
+    yourNextCard = document.getElementById("your-next-card");
+    yourPlayPile1 = document.getElementById("your-play-pile-1");
+    yourPlayPile2 = document.getElementById("your-play-pile-2");
+    yourPlayPile3 = document.getElementById("your-play-pile-3");
+    yourPlayPile4 = document.getElementById("your-play-pile-4"); 
+    yourPlayPile5 = document.getElementById("your-play-pile-5"); 
+    yourBlitzPile = document.getElementById("your-blitz-pile");
 
-    pileCount = 0;
+    // Initialize each piles cards array
+    yourDeck.cards = deck;
+    for (let pile of [yourNextCard, yourPlayPile1, yourPlayPile2, yourPlayPile3, yourPlayPile4, yourPlayPile5, yourBlitzPile]) {
+        pile.cards = []
+    }
 
-    // Set the image of your deck to the back of a playing card
-    yourDeck.element.style.backgroundImage = "url('/card-pngs/Back\ Red\ 2.png')";
+    // Set .active = true for the piles with movable cards 
+    for (let pile of [yourPlayPile1, yourPlayPile2, yourPlayPile3, yourPlayPile4, yourPlayPile5, yourBlitzPile]) {
+        pile.active = true;
+    }
+    yourNextCard.active = false;
 
     // Deal out the initial game state
-    activePiles = [];
     add_card_to_pile(remove_card_from_pile(yourDeck), yourPlayPile1);
     add_card_to_pile(remove_card_from_pile(yourDeck), yourPlayPile2);
     add_card_to_pile(remove_card_from_pile(yourDeck), yourPlayPile3);
-    for (let i = 0; i < 10; i++) {
+    add_card_to_pile(remove_card_from_pile(yourDeck), yourPlayPile4);
+    add_card_to_pile(remove_card_from_pile(yourDeck), yourPlayPile5);
+    for (let i = 0; i < NUM_BLITZ_CARDS; i++) {
         add_card_to_pile(remove_card_from_pile(yourDeck), yourBlitzPile);
     }
 
+    yourDeck.style.backgroundImage = "url('/card-pngs/Back\ Red\ 2.png')";
+
     // Initialize dragging card
-    draggingCard = {cards: [], element: document.createElement("div")}
-    draggingCard.element.classList.add("your-cards");
-    draggingCard.element.id = "dragging-card";
+    draggingCard = document.createElement("div");
+    draggingCard.cards = [];
+    draggingCard.classList.add("your-cards");
+    draggingCard.id = "dragging-card";
+    draggingCard.draggable = true;
     isDragging = false;
 }
 new_game();
 
+yourDeck.onclick = draw_card;
+//yourDeck.onclick = reset_deck;
 
-gameBoard.onmousedown = mouse_down;
+
+yourNextCard.onmousedown = mouse_down
+yourPlayPile1.onmousedown = mouse_down;
+yourPlayPile2.onmousedown = mouse_down;
+yourPlayPile3.onmousedown = mouse_down;
+yourPlayPile4.onmousedown = mouse_down;
+yourPlayPile5.onmousedown = mouse_down;
+yourBlitzPile.onmousedown = mouse_down;
+
 gameBoard.onmousemove = mouse_move;
 gameBoard.onmouseup = mouse_up;
-gameBoard.onclick = mouse_click;
