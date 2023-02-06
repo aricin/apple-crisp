@@ -24,7 +24,7 @@ body {
 }
 
 /* Community Game Board */
-#pile-container {
+#lake-container {
     position: fixed;
     left: 50%;
     transform: translate(-50%);
@@ -36,8 +36,8 @@ body {
     flex-wrap: wrap;
 }
 
-/* Client Game Board */
-#your-gameboard {
+/* Individual User Game Board */
+#your-tableau {
     position: fixed;
     max-width: 100%;
     width: 1000px;
@@ -65,13 +65,13 @@ body {
 .active-piles {
     cursor: pointer;
 }
-#your-deck {
+#your-stock-pile {
 
 }
-#your-next-card {
+#your-waste-pile {
 
 }
-#your-play-piles {
+#your-work-piles {
     display: flex;
     width: 60%;
     justify-content: space-evenly;
