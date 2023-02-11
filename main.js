@@ -1,3 +1,19 @@
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, set, onValue, push, child, onChildAdded, onChildChanged } from "firebase/database";
+
+
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Insert firebaseConfig here:
+
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+
 // Values used for constructing a deck of cards
 const suits = ["Clubs", "Diamond", "Hearts", "Spades"];
 const values = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
@@ -113,7 +129,6 @@ function remove_card_from_pile(pile) {
 }
 
 
-
 /* ---- Dragging Stuff ---- */
 
 function is_valid_placement(pile) {
@@ -172,6 +187,23 @@ let mouse_move = function(e) {
     }
 }
 
+function update_lake(card, id) {
+    console.log(card);
+    if (card.value == 1) {
+        let newPile = document.createElement("div");
+        newPile.classList.add("your-cards");
+        newPile.classList.add("community-cards");
+        newPile.id = id;
+        newPile.style.backgroundImage = get_card_img(card);
+        newPile.cards = [card];
+        lakeContainer.appendChild(newPile);
+    } else {
+        let pile = document.getElementById(id);
+        pile.style.backgroundImage = get_card_img(card);
+    }
+}
+
+
 let mouse_up = function(e) {
     if (!isDragging) {
         return
@@ -183,16 +215,17 @@ let mouse_up = function(e) {
         let targetElements = document.elementsFromPoint(curMouseX, curMouseY);
 
         if (targetElements.includes(lakeContainer)) {
-            if (draggingCard.cards[0].value == 1) {
-                let newPile = document.createElement("div");
-                newPile.classList.add("your-cards");
-                newPile.classList.add("community-cards");
-                newPile.style.backgroundImage = draggingCard.style.backgroundImage;
-                newPile.cards = draggingCard.cards;
-                lakeContainer.appendChild(newPile);
-                pileCount++;
+            if (draggingCard.cards[0].value == 1) { // If card is an Ace
+                let newPileId = push(child(ref(db), 'lake')).key;
+                set(ref(db, `lake/${newPileId}`), {
+                    card: draggingCard.cards[0]
+                });
             } else if (is_valid_placement(targetElements[1])) {
-                add_card_to_pile(draggingCard.cards[0], targetElements[1])
+                console.log(targetElements[1]);
+                let id = targetElements[1].id;
+                set(ref(db, `lake/${id}`), {
+                    card: draggingCard.cards[0]
+                });
             } else {
                 console.log("NOPE");
                 add_card_to_pile(draggingCard.cards[0], startPile)
@@ -214,19 +247,6 @@ let mouse_up = function(e) {
             add_card_to_pile(draggingCard.cards[0], startPile)
         }
         
-
-
-
-        // If the mouse is over the pile container
-            // If the current card is an ace
-            // If the target pile is -1 the current card
-
-
-        // If the mouse is over the play piles
-            // If the target pile is empty
-            // If the target pile is -1 the current card
-
-
         gameContainer.removeChild(draggingCard);
         draggingCard.cards = [];
         isDragging = false;
@@ -239,6 +259,8 @@ let draw_card = function(e) {
 
     if (yourStockPile.cards.length != 0) {
         add_card_to_pile(remove_card_from_pile(yourStockPile), yourWastePile);
+        yourWastePile.classList.add("draw-animation");
+        
     } else if (yourStockPile.cards.length == 0) {
         yourStockPile.cards = yourWastePile.cards.reverse();
         yourWastePile.cards = [];
@@ -247,7 +269,14 @@ let draw_card = function(e) {
         yourWastePile.style.backgroundImage = null;
 
         yourWastePile.active = false;
+
+        yourStockPile.classList.add("reset-deck");
     }
+}
+
+let reset_animation = function(e) {
+    yourWastePile.classList.remove("draw-animation");
+    yourStockPile.classList.remove("reset-deck");
 }
 
 let reset_deck = function(e) {
@@ -324,11 +353,25 @@ function new_game() {
     draggingCard.id = "dragging-card";
     draggingCard.draggable = true;
     isDragging = false;
+
+    // When db updates
+    set(ref(db), null);
+    let lakeRef = ref(db, 'lake/');
+    onChildAdded(lakeRef, (snapshot) => {
+        if (snapshot.exists()) {
+            update_lake(snapshot.val().card, snapshot.key);
+        }
+    });
+    onChildChanged(lakeRef, (snapshot) => {
+        if (snapshot.exists()) {
+            update_lake(snapshot.val().card, snapshot.key);
+        }
+    });
 }
 new_game();
 
 yourStockPile.onclick = draw_card;
-
+yourStockPile.onmouseup = reset_animation;
 
 yourWastePile.onmousedown = mouse_down
 yourWorkPile1.onmousedown = mouse_down;
