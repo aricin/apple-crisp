@@ -1,6 +1,6 @@
 * { 
 	box-sizing: border-box;
-    /* border: 3px solid red; */
+    /*border: 3px solid red;*/
 }
 
 html {
@@ -20,43 +20,53 @@ body {
 
 #game-container {
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+}
+
+#controls {
+    position: absolute;
+    bottom: 0%;
+    left: 0%;
+}
+
+#settings {
+    position: absolute;
+    bottom: 0%;
+    right: 0%;
+    margin: 20px;
 }
 
 /* Community Game Board */
 #lake-container {
-    position: fixed;
-    left: 50%;
-    transform: translate(-50%);
     height: 50%;
     width: 70%;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     border-radius: 10px;
-    box-shadow: 0px 0px 10px 0px black inset;
-    margin: 20px;
+    box-shadow: 0px 0px 5px 0px black inset;
+    margin: 10px;
     padding: 10px;
 }
 
 /* Individual User Game Board */
 #your-tableau {
-    position: fixed;
     max-width: 100%;
-    width: 1100px;
+    width: 700px;
     height: 40%;
-    left: 50%;
-    bottom: 0%;
-    transform: translate(-50%);
     display: flex;
     justify-content: space-between;
 }
 .your-cards {
     background-size: cover;
     background-position: center;
-    width: 103px;
-    height: 138px;
-    border-radius: 10px;
-    box-shadow: 0px 0px 10px 0px black inset;
+    width: 51px;
+    height: 69px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 5px 0px black inset;
 }
 .community-cards {
     margin: 5px;
@@ -84,7 +94,35 @@ body {
     padding-left: 40px;
     padding-right: 40px;
 }
-.empty {
+
+
+/* Opponents */
+#opponent-container-left {
+    position: absolute;
+    left: 0%;
+    top: 0%;
+    height: 60%;
+    width: 14%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+}
+
+#opponent-container-right {
+    position: absolute;
+    right: 0%;
+    top: 0%;
+    height: 60%;
+    width: 15%;
+}
+
+.opponent-left {
+    height: 100px;
+    width: 100%;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    background-color: rgba(50, 50, 50, 0.8);
+    box-shadow: 1;
 }
 
 
