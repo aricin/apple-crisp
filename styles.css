@@ -78,13 +78,13 @@ body {
 .active-piles {
     cursor: pointer;
 }
-#your-stock-pile {
+.stock-pile {
     margin-top: 5%;
 }
-#your-waste-pile {
+.waste-pile {
     margin-top: 5%;
 }
-#your-objective-pile {
+.objective-pile {
     margin-top: 5%;
 }
 #your-work-piles {
@@ -97,9 +97,9 @@ body {
 
 
 /* Opponents */
-#opponent-container-left {
+
+.opponent-container {
     position: absolute;
-    left: 0%;
     top: 0%;
     height: 60%;
     width: 14%;
@@ -108,22 +108,67 @@ body {
     justify-content: space-evenly;
 }
 
+#opponent-container-left {
+    left: 0%;
+}
+
 #opponent-container-right {
-    position: absolute;
     right: 0%;
-    top: 0%;
-    height: 60%;
-    width: 15%;
+}
+
+.opponent {
+    height: 100px;
+    width: 100%;
+    z-index: 1000000;
+    border: 1px solid black;
+    /* backdrop-filter: blur(1px);*/
+    padding: 10px;
 }
 
 .opponent-left {
-    height: 100px;
-    width: 100%;
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
-    background-color: rgba(50, 50, 50, 0.8);
-    box-shadow: 1;
+    box-shadow: -0px 0px 5px rgb(40, 40, 40);
+    border-left: 0px;
 }
+
+.opponent-right {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    box-shadow: 0px 0px 5px rgb(40, 40, 40);
+    border-right: 0px;
+}
+
+.opp-tableau {
+    width: 100%;
+    height: 100%;
+    height: 40%;
+    display: flex;
+    justify-content: space-between;
+}
+
+.opp-cards {
+    background-size: contain;
+    background-position: center;
+    width: 13px;
+    height: 17.5px;
+    border-radius: 1px;
+    box-shadow: 0px 0px 3px 0px black inset;
+}
+
+.opp-work-piles {
+    display: flex;
+    width: 60%;
+    justify-content: space-evenly;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.flex {
+    display: flex;
+    justify-content: space-around;
+}
+
 
 
 /* Animations */
@@ -149,6 +194,4 @@ body {
 }
 .reset-deck {
     animation: reset-deck 0.3s ease-out;
-    border-radius: 10px;
-    box-shadow: 0px 0px 10px 0px black inset;
 }

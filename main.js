@@ -1,17 +1,17 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, push, child, onChildAdded, onChildChanged, onChildRemoved, onDisconnect, onValue, remove } from "firebase/database";
+import { getDatabase, ref, set, push, child, onChildAdded, onChildChanged, onChildRemoved, onDisconnect, onValue, get } from "firebase/database";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
 
 /* ----- Firebase Stuff ----- */
 const firebaseConfig = {
-    apiKey: "AIzaSyDWsXAWQW9u4dJKVVqW1EN-1fB8CSB0LbQ",
-    authDomain: "apple-crisp.firebaseapp.com",
-    databaseURL: "https://apple-crisp-default-rtdb.firebaseio.com",
-    projectId: "apple-crisp",
-    storageBucket: "apple-crisp.appspot.com",
-    messagingSenderId: "541844444487",
-    appId: "1:541844444487:web:12f3fb46688a463c10e862"
+    apiKey: import.meta.env.VITE_API_KEY,
+    authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+    databaseURL: import.meta.env.VITE_DATABASE_URL,
+    projectId: import.meta.env.VITE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_APP_ID,
 };
 
 // Initialize Firebase
@@ -26,7 +26,6 @@ if (urlParams.get("lobby")) {
     lobbyID = urlParams.get("lobby");
 } else {
     lobbyID = push(child(ref(db), 'lobbies/')).key;
-    //let lobby = db.collection('lobby');
     window.location.href = 'http://127.0.0.1:5173/?lobby=' + lobbyID;
 }
 
@@ -37,17 +36,36 @@ let userRef;
 const auth = getAuth();
 
 onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // User is signed in, see docs for a list of available properties
-    // https://firebase.google.com/docs/reference/js/firebase.User
-    userID = user.uid;
-    userRef = ref(db, `lobbies/${lobbyID}/users/${userID}`);
+    if (user) {
+        // User is signed in, see docs for a list of available properties
+        // https://firebase.google.com/docs/reference/js/firebase.User
+        userID = user.uid;
+        userRef = ref(db, `lobbies/${lobbyID}/users/${userID}`);
 
-    set(userRef, {name: 'player'});
-    onDisconnect(userRef).remove();
-  } else {
-    // User signed out
-  }
+        set(userRef, {
+            name: 'Player', 
+            numobjcards: 0,
+            stockpile: '',
+            wastepile: '',
+            workpile1: '',
+            workpile2: '',
+            workpile3: '',
+            workpile4: '',
+            workpile5: '',
+            objpile: '',
+        });
+
+        onDisconnect(userRef).remove();
+    } else {
+        // User signed out
+
+        // This doesn't work. Might need something server side to clear a lobby when the last user leaves
+        // get(ref(db, `lobbies/${lobbyID}/users`)).then((snapshot) => {
+        //     if (!snapshot.exists()) {
+        //         set(ref(db, `lobbies/${lobbyID}`), null);
+        //     }
+        // });
+    }
 });
 
 signInAnonymously(auth)
@@ -60,14 +78,20 @@ signInAnonymously(auth)
         console.log(errorCode, errorMessage);
 });
 
-// Duh, this won't work because when the last user closes the app there isn't an instance of the code anymore
-onValue(ref(db, `lobbies/${lobbyID}/users/`), (snapshot) => {
-    if(!(snapshot.exists())) {
-        console.log("hello sir");
-        //remove(ref(db, `lobbies/${lobbyID}/lake`));
-        set(ref(db, `lobbies/${lobbyID}`), null);
-    }
+// This is finicky, as every doc has stated. I guess it doesn't work if a user is in incognito?
+// Will need a better solution in the future but for now this will work maybe 90% of the time.
+// ----> Try firebase cloud functions. <----
+//
+// Clear the entire lobby node within firebase if the last user closes the page.
+window.addEventListener("beforeunload", () => {
+    get(ref(db, `lobbies/${lobbyID}/users`)).then((snapshot) => {
+        if (Object.keys(snapshot.val()).length <= 1) {
+            set(ref(db, `lobbies/${lobbyID}`), null);
+        }
+    });
 });
+
+
 
 /* ----- User Preferences ----- */
 let nameForm = document.getElementById("name-form");
@@ -79,7 +103,7 @@ nameForm.addEventListener('submit', function(event) {
 let nameField = document.getElementById("name-field")
 nameField.addEventListener('input', function(e) {
     e.preventDefault();
-    set(userRef, {name: nameField.value})
+    set(ref(db, `lobbies/${lobbyID}/users/${userID}/name`), nameField.value);
 });
 
 
@@ -92,7 +116,7 @@ nameField.addEventListener('input', function(e) {
  */
 function buildDeck() {
     let suits = ["Clubs", "Diamond", "Hearts", "Spades"];
-    let values = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
+    let values = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]; // Update this base on user preference
     let deck = [];
 
     for (let suit of suits) {
@@ -181,7 +205,7 @@ function remove_card_from_pile(pile) {
  * @param {HTMLElement} pile 
  * @returns {boolean}
  */
-function is_valid_placement(pile) {
+function is_valid_placement(pile) { // Make two separate methods
     // The dragged card is over the "lake"...
     if (pile.classList.contains("community-cards")) {
         // The card is over a valid pile
@@ -250,10 +274,11 @@ let drag_card = function(e) {
 }
 
 /** 
- * Runs when the user drags a card.
- * Updates the position of the card being dragged relative to the users cursor.
+ * Runs when the user lets go of a card
+ * Adds the card to the selected pile if it is valid, otherwise returns the card to it's
+ * origin pile.
  */
-let place_card = function(e) {
+let place_card = function(e) { // Highlight pile when user is hovering over it
     if (!isDragging) {
         return
     } else {
@@ -263,10 +288,11 @@ let place_card = function(e) {
         let curMouseY = parseInt(e.clientY);
         let targetElements = document.elementsFromPoint(curMouseX, curMouseY);
 
+        // Seperate the lake and work piles
         if (targetElements.includes(lakeContainer)) {
             if (draggingCard.cards[0].value == 1) { // If card is an Ace
                 let newPileId = push(child(ref(db), `lobbies/${lobbyID}/lake`)).key;
-                set(ref(db, `lobbies/${lobbyID}/lake/${newPileId}`), {
+                set(ref(db, `lobbies/${lobbyID}/lake/${newPileId}`), { // Pull out the db path
                     card: draggingCard.cards[0]
                 });
             } else if (is_valid_placement(targetElements[1])) {
@@ -280,8 +306,7 @@ let place_card = function(e) {
                 add_card_to_pile(draggingCard.cards[0], startPile)
             }
         } else if (targetElements.includes(yourWorkPiles)) {
-            console.log(targetElements[1]);
-            if (targetElements[1].cards.length == 0) {
+            if (targetElements[1].classList.contains("work-piles") && targetElements[1].cards.length == 0) {
                 console.log("ZERO");
                 add_card_to_pile(draggingCard.cards[0], targetElements[1])
             } else if (is_valid_placement(targetElements[1])) {
@@ -299,7 +324,6 @@ let place_card = function(e) {
         gameContainer.removeChild(draggingCard);
         draggingCard.cards = [];
         isDragging = false;
-
     }
 }
 
@@ -310,9 +334,11 @@ let draw_card = function(e) {
     e.preventDefault();
 
     if (yourStockPile.cards.length != 0) {
-        add_card_to_pile(remove_card_from_pile(yourStockPile), yourWastePile);
+        let poppedCard = remove_card_from_pile(yourStockPile);
+        add_card_to_pile(poppedCard, yourWastePile);
         yourWastePile.classList.add("draw-animation");
-        
+
+        set(ref(db, `lobbies/${lobbyID}/users/${userID}/wastepile`), poppedCard);
     } else if (yourStockPile.cards.length == 0) {
         yourStockPile.cards = yourWastePile.cards.reverse();
         yourWastePile.cards = [];
@@ -326,7 +352,7 @@ let draw_card = function(e) {
     }
 }
 
-let reset_animation = function() {
+let reset_animation = function() { // Comment
     yourWastePile.classList.remove("draw-animation");
     yourStockPile.classList.remove("reset-deck");
 }
@@ -365,7 +391,6 @@ let draggingCard = document.createElement("div"); // The card that is currently 
 draggingCard.cards = [];
 draggingCard.classList.add("your-cards");
 draggingCard.id = "dragging-card";
-draggingCard.draggable = true;
 
 let isDragging = false; // True if a card is currently being dragged
 let startMouseX;        // X value of mouse when initially clicked
@@ -393,6 +418,7 @@ onChildAdded(lakeRef, (snapshot) => {
         lakeContainer.appendChild(newPile);
     }
 });
+
 onChildChanged(lakeRef, (snapshot) => {
     if (snapshot.exists()) {
         let card = snapshot.val().card;
@@ -402,9 +428,102 @@ onChildChanged(lakeRef, (snapshot) => {
         pile.style.backgroundImage = get_card_img(card);
     }
 });
+
 onChildRemoved(lakeRef, (snapshot) => {
     if (snapshot.exists()) {
         lakeContainer.removeChild(document.getElementById(snapshot.key));
+    }
+});
+
+
+/* ----- User Listeners ----- */
+
+function build_opp_tableau(name, numObjCards) {
+    let oppHTML = 
+        `<div class="opp-tableau tableau">
+            <div class="stockpile opp-cards"></div>
+            <div class="wastepile opp-cards"></div>
+            <div class="opp-work-piles work-piles">
+                <div class="workpile1 opp-cards"></div>
+                <div class="workpile2 opp-cards"></div>
+                <div class="workpile3 opp-cards"></div>
+                <div class="workpile4 opp-cards"></div>
+                <div class="workpile5 opp-cards"></div>
+            </div>
+            <div class="objpile opp-cards"></div>
+        </div>
+        <div class="flex">
+            <p class="name"></p>
+            <p class="numobjcards"></p>
+        </div>`;
+    return oppHTML;
+}
+
+let usersRef = ref(db, `lobbies/${lobbyID}/users/`);
+let oppLeft = document.getElementById("opponent-container-left");
+let oppRight = document.getElementById("opponent-container-right");
+let numOpps = 0;
+onChildAdded(usersRef, (snapshot) => {
+    if (snapshot.exists()) {
+        let id = snapshot.key;
+        if (id != userID) {
+            let opp = document.createElement("div");
+            opp.classList.add("opponent");
+            opp.id = id;
+            opp.innerHTML = build_opp_tableau();
+
+            if (numOpps % 2 == 0) {
+                opp.classList.add("opponent-left");
+                oppLeft.appendChild(opp);
+            } else {
+                opp.classList.add("opponent-right");
+                oppRight.appendChild(opp);
+            }
+            numOpps++;
+
+            snapshot.forEach((childSnapshot) => {
+                if (childSnapshot.key == "name" || childSnapshot.key == "numobjcards") {
+                    let updatedOpp = document.querySelector(`#${id} .${childSnapshot.key}`);
+                    updatedOpp.innerHTML = childSnapshot.val();
+                } else {
+                    // Problem with null values when there aren't any cards in a pile
+                    let updatedOpp = document.querySelector(`#${id} .${childSnapshot.key}`); 
+                    updatedOpp.style.backgroundImage = get_card_img(childSnapshot.val());
+                }
+            });
+        }
+    }
+});
+
+onChildChanged(usersRef, (snapshot) => {
+    if (snapshot.exists()) {
+        let id = snapshot.key;
+        if (id != userID) {
+            snapshot.forEach((childSnapshot) => {
+                if (childSnapshot.key == "name" || childSnapshot.key == "numobjcards") {
+                    let updatedOpp = document.querySelector(`#${id} .${childSnapshot.key}`);
+                    updatedOpp.innerHTML = childSnapshot.val();
+                } else {
+                    console.log(childSnapshot.key);
+
+                    // Problem with null values when there aren't any cards in a pile
+                    let updatedOpp = document.querySelector(`#${id} .${childSnapshot.key}`); 
+                    updatedOpp.style.backgroundImage = get_card_img(childSnapshot.val());
+                }
+            });
+        }
+    }
+});
+
+onChildRemoved(usersRef, (snapshot) => {
+    if (snapshot.exists()) {
+        let opp = document.getElementById(snapshot.key);
+        if (opp.classList.contains("opponent-left")) {
+            oppLeft.removeChild(document.getElementById(snapshot.key));
+        } else {
+            oppRight.removeChild(document.getElementById(snapshot.key));
+        }
+        numOpps--;
     }
 });
 
@@ -429,14 +548,28 @@ dealCards.addEventListener("click", () => {
     yourWastePile.style.backgroundImage = null;
 
     // Deal out the initial game state
-    add_card_to_pile(remove_card_from_pile(yourStockPile), yourWorkPile1);
-    add_card_to_pile(remove_card_from_pile(yourStockPile), yourWorkPile2);
-    add_card_to_pile(remove_card_from_pile(yourStockPile), yourWorkPile3);
-    add_card_to_pile(remove_card_from_pile(yourStockPile), yourWorkPile4);
-    add_card_to_pile(remove_card_from_pile(yourStockPile), yourWorkPile5);
+    let poppedCard = remove_card_from_pile(yourStockPile);
+    add_card_to_pile(poppedCard, yourWorkPile1);
+    set(ref(db, `lobbies/${lobbyID}/users/${userID}/workpile1`), poppedCard);
+    poppedCard = remove_card_from_pile(yourStockPile);
+    add_card_to_pile(poppedCard, yourWorkPile2);
+    set(ref(db, `lobbies/${lobbyID}/users/${userID}/workpile2`), poppedCard);
+    poppedCard = remove_card_from_pile(yourStockPile);
+    add_card_to_pile(poppedCard, yourWorkPile3);
+    set(ref(db, `lobbies/${lobbyID}/users/${userID}/workpile3`), poppedCard);
+    poppedCard = remove_card_from_pile(yourStockPile);
+    add_card_to_pile(poppedCard, yourWorkPile4);
+    set(ref(db, `lobbies/${lobbyID}/users/${userID}/workpile4`), poppedCard);
+    poppedCard = remove_card_from_pile(yourStockPile);
+    add_card_to_pile(poppedCard, yourWorkPile5);
+    set(ref(db, `lobbies/${lobbyID}/users/${userID}/workpile5`), poppedCard);
+
     for (let i = 0; i < NUM_BLITZ_CARDS; i++) {
-        add_card_to_pile(remove_card_from_pile(yourStockPile), yourObjectivePile);
+        poppedCard = remove_card_from_pile(yourStockPile);
+        add_card_to_pile(poppedCard, yourObjectivePile);
+        set(ref(db, `lobbies/${lobbyID}/users/${userID}/objpile`), poppedCard);
     }
+    set(ref(db, `lobbies/${lobbyID}/users/${userID}/numobjcards`), 10);
 
     yourStockPile.style.backgroundImage = "url('/card-pngs/Back\ Red\ 2.png')";
 });
@@ -450,4 +583,3 @@ let invite = document.getElementById("invite");
 invite.addEventListener("click", () => {
     navigator.clipboard.writeText('http://127.0.0.1:5173/?lobby=' + lobbyID);
 });
-
