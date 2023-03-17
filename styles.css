@@ -1,16 +1,21 @@
 * { 
 	box-sizing: border-box;
-    /*border: 3px solid red;*/
+    font-family: 'Outfit', sans-serif;
+    /* border: 3px solid red; */
+}
+
+p {
+    font-size: 1rem;
+    /* color: white; */
 }
 
 html {
 	height: 100%;
-    background-image: url("/pokerfelt.svg");
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center;
-	color: #fff;
     overflow: hidden;
+    background-color: #28642D;
+    opacity: 1;
+    background-size: 4px 4px;
+    background-image: repeating-linear-gradient(45deg, #2E7934 0, #2E7934 0.4px, #28642D 0, #28642D 50%);
 }
 
 body {
@@ -23,7 +28,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    
+    background: rgb(255,255,255);
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 100%);
 }
 
 #controls {
@@ -117,12 +123,15 @@ body {
 }
 
 .opponent {
+    display: flex;
+    flex-direction: column;
     height: 100px;
     width: 100%;
-    z-index: 1000000;
     border: 1px solid black;
-    /* backdrop-filter: blur(1px);*/
+    /* backdrop-filter: blur(1px); */
     padding: 10px;
+    align-items: center;
+    /* background-color: black; */
 }
 
 .opponent-left {
@@ -141,10 +150,12 @@ body {
 
 .opp-tableau {
     width: 100%;
+    max-width: 200px;
     height: 100%;
     height: 40%;
     display: flex;
     justify-content: space-between;
+    overflow: hidden;
 }
 
 .opp-cards {
@@ -154,6 +165,7 @@ body {
     height: 17.5px;
     border-radius: 1px;
     box-shadow: 0px 0px 3px 0px black inset;
+    /* background-color: white; */
 }
 
 .opp-work-piles {
@@ -166,6 +178,9 @@ body {
 
 .flex {
     display: flex;
+    width: 100%;
+    max-width: 200px;
+    overflow: hidden;
     justify-content: space-around;
 }
 

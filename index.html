@@ -4,35 +4,38 @@
     <title>Apple Crisp - Play with your friends</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css"  type="text/css" >
 </head>
 <body>
-    <div id="controls">
-        <button id="deal-cards" type="button">Deal Your Cards</button>
-        <button id="clear-lake" type="button">Clear Lake</button>
-        <button id="invite" type="button">Copy Invite Link</button>
-    </div>
-    <div id="settings">
-        <form id="name-form">
-            <label for="name-field">Nickname:</label><br>
-            <input type="text" id="name-field" name="fname" value="Player"><br>
-          </form>
-    </div>
-    <div id ="opponent-container-left" class="opponent-container"></div>
-    <div id ="opponent-container-right" class="opponent-container"></div>
     <div id="game-container">
+        <div id="controls">
+            <button id="deal-cards" type="button">Deal Your Cards</button>
+            <button id="clear-lake" type="button">Clear Lake</button>
+            <button id="invite" type="button">Copy Invite Link</button>
+        </div>
+        <div id="settings">
+            <form id="name-form">
+                <label for="name-field">Nickname:</label><br>
+                <input type="text" id="name-field" name="fname" value="Player"><br>
+              </form>
+        </div>
+        <div id ="opponent-container-left" class="opponent-container"></div>
+        <div id ="opponent-container-right" class="opponent-container"></div>
         <div id="lake-container"></div>
         <div id="your-tableau">
-            <div id="your-stock-pile" class="stock-pile your-cards"></div>
-            <div id="your-waste-pile" class="waste-pile your-cards empty"></div>
+            <div id="your-stock-pile" class="stockpile your-cards"></div>
+            <div id="your-waste-pile" class="wastepile your-cards"></div>
             <div id="your-work-piles">
-                <div id="your-work-pile-1" class="your-cards work-piles"></div>
-                <div id="your-work-pile-2" class="your-cards work-piles"></div> <!-- TODO: Create these dynamically -->
-                <div id="your-work-pile-3" class="your-cards work-piles"></div>
-                <div id="your-work-pile-4" class="your-cards work-piles"></div>
-                <div id="your-work-pile-5" class="your-cards work-piles"></div>
+                <div id="your-work-pile-1" class="workpile1 your-cards work-piles"></div>
+                <div id="your-work-pile-2" class="workpile2 your-cards work-piles"></div> <!-- TODO: Create these dynamically -->
+                <div id="your-work-pile-3" class="workpile3 your-cards work-piles"></div>
+                <div id="your-work-pile-4" class="workpile4 your-cards work-piles"></div>
+                <div id="your-work-pile-5" class="workpile5 your-cards work-piles"></div>
             </div>
-            <div id="your-objective-pile" class="objective-pile your-cards"></div>
+            <div id="your-objective-pile" class="objpile your-cards"></div>
         </div>
     </div>
     <script type="module" src="/main.js"></script>

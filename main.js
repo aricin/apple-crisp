@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, push, child, onChildAdded, onChildChanged, onChildRemoved, onDisconnect, onValue, get } from "firebase/database";
+import { getDatabase, ref, set, push, child, onChildAdded, onChildChanged, onChildRemoved, onDisconnect, get, runTransaction } from "firebase/database";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
 
@@ -173,6 +173,15 @@ function add_card_to_pile(card, pile) {
     }
     pile.cards.push(card);
     pile.style.backgroundImage = get_card_img(card);
+
+    let pileName = pile.classList[0];
+    set(ref(db, `lobbies/${lobbyID}/users/${userID}/${pileName}`), card);
+    if (pileName == 'objpile') {
+        runTransaction(ref(db, `lobbies/${lobbyID}/users/${userID}/numobjcards`), (currentValue) => {
+            return (currentValue || 0) + 1;
+        });
+    }
+
 }
 
 /**
@@ -184,14 +193,23 @@ function add_card_to_pile(card, pile) {
 function remove_card_from_pile(pile) {
     let poppedCard = pile.cards.pop();
     let topCard = pile.cards[pile.cards.length - 1];
+    let pileName = pile.classList[0];
 
     if (pile.cards.length == 0) {
         pile.style.backgroundImage = null;
         pile.active = false;
+        set(ref(db, `lobbies/${lobbyID}/users/${userID}/${pileName}`), '');
     } else {
         if (!(pile.id == "your-stock-pile")) {
             pile.style.backgroundImage = get_card_img(topCard);
+            set(ref(db, `lobbies/${lobbyID}/users/${userID}/${pileName}`), topCard);
         } 
+    }
+
+    if (pileName == 'objpile') {
+        runTransaction(ref(db, `lobbies/${lobbyID}/users/${userID}/numobjcards`), (currentValue) => {
+            return (currentValue || 0) - 1;
+        });
     }
     
     return poppedCard;
@@ -307,7 +325,7 @@ let place_card = function(e) { // Highlight pile when user is hovering over it
             }
         } else if (targetElements.includes(yourWorkPiles)) {
             if (targetElements[1].classList.contains("work-piles") && targetElements[1].cards.length == 0) {
-                console.log("ZERO");
+                console.log(targetElements[1]);
                 add_card_to_pile(draggingCard.cards[0], targetElements[1])
             } else if (is_valid_placement(targetElements[1])) {
                 console.log("VALID");
@@ -345,6 +363,8 @@ let draw_card = function(e) {
 
         yourStockPile.style.backgroundImage = "url('/card-pngs/Back\ Red\ 2.png')";
         yourWastePile.style.backgroundImage = null;
+        set(ref(db, `lobbies/${lobbyID}/users/${userID}/wastepile`), '');
+        set(ref(db, `lobbies/${lobbyID}/users/${userID}/stockpile`), 'facedown');
 
         yourWastePile.active = false;
 
@@ -436,9 +456,9 @@ onChildRemoved(lakeRef, (snapshot) => {
 });
 
 
-/* ----- User Listeners ----- */
+/* ----- Opponent Listeners ----- */
 
-function build_opp_tableau(name, numObjCards) {
+function build_opp_tableau() {
     let oppHTML = 
         `<div class="opp-tableau tableau">
             <div class="stockpile opp-cards"></div>
@@ -486,11 +506,13 @@ onChildAdded(usersRef, (snapshot) => {
                     let updatedOpp = document.querySelector(`#${id} .${childSnapshot.key}`);
                     updatedOpp.innerHTML = childSnapshot.val();
                 } else {
-                    // Problem with null values when there aren't any cards in a pile
                     let updatedOpp = document.querySelector(`#${id} .${childSnapshot.key}`); 
                     updatedOpp.style.backgroundImage = get_card_img(childSnapshot.val());
                 }
             });
+
+            let oppStockPile = document.querySelector(`#${id} .stockpile`);
+            oppStockPile.style.backgroundImage = "url('/card-pngs/Back\ Red\ 2.png')";
         }
     }
 });
@@ -507,8 +529,15 @@ onChildChanged(usersRef, (snapshot) => {
                     console.log(childSnapshot.key);
 
                     // Problem with null values when there aren't any cards in a pile
-                    let updatedOpp = document.querySelector(`#${id} .${childSnapshot.key}`); 
-                    updatedOpp.style.backgroundImage = get_card_img(childSnapshot.val());
+                    let updatedOpp = document.querySelector(`#${id} .${childSnapshot.key}`);
+                    
+                    if (childSnapshot.val() == '') {
+                        updatedOpp.style.backgroundImage = null;
+                    } else if (childSnapshot.val() == 'facedown') {
+                        updatedOpp.style.backgroundImage = "url('/card-pngs/Back\ Red\ 2.png')";
+                    } else {
+                        updatedOpp.style.backgroundImage = get_card_img(childSnapshot.val());
+                    }
                 }
             });
         }
@@ -517,13 +546,16 @@ onChildChanged(usersRef, (snapshot) => {
 
 onChildRemoved(usersRef, (snapshot) => {
     if (snapshot.exists()) {
-        let opp = document.getElementById(snapshot.key);
-        if (opp.classList.contains("opponent-left")) {
-            oppLeft.removeChild(document.getElementById(snapshot.key));
-        } else {
-            oppRight.removeChild(document.getElementById(snapshot.key));
-        }
-        numOpps--;
+        let id = snapshot.key;
+        if (id != userID) {
+            let opp = document.getElementById(snapshot.key);
+            if (opp.classList.contains("opponent-left")) {
+                oppLeft.removeChild(document.getElementById(snapshot.key));
+            } else {
+                oppRight.removeChild(document.getElementById(snapshot.key));
+            }
+            numOpps--;
+        }   
     }
 });
 
@@ -548,30 +580,20 @@ dealCards.addEventListener("click", () => {
     yourWastePile.style.backgroundImage = null;
 
     // Deal out the initial game state
-    let poppedCard = remove_card_from_pile(yourStockPile);
-    add_card_to_pile(poppedCard, yourWorkPile1);
-    set(ref(db, `lobbies/${lobbyID}/users/${userID}/workpile1`), poppedCard);
-    poppedCard = remove_card_from_pile(yourStockPile);
-    add_card_to_pile(poppedCard, yourWorkPile2);
-    set(ref(db, `lobbies/${lobbyID}/users/${userID}/workpile2`), poppedCard);
-    poppedCard = remove_card_from_pile(yourStockPile);
-    add_card_to_pile(poppedCard, yourWorkPile3);
-    set(ref(db, `lobbies/${lobbyID}/users/${userID}/workpile3`), poppedCard);
-    poppedCard = remove_card_from_pile(yourStockPile);
-    add_card_to_pile(poppedCard, yourWorkPile4);
-    set(ref(db, `lobbies/${lobbyID}/users/${userID}/workpile4`), poppedCard);
-    poppedCard = remove_card_from_pile(yourStockPile);
-    add_card_to_pile(poppedCard, yourWorkPile5);
-    set(ref(db, `lobbies/${lobbyID}/users/${userID}/workpile5`), poppedCard);
+    add_card_to_pile(remove_card_from_pile(yourStockPile), yourWorkPile1);
+    add_card_to_pile(remove_card_from_pile(yourStockPile), yourWorkPile2);
+    add_card_to_pile(remove_card_from_pile(yourStockPile), yourWorkPile3);
+    add_card_to_pile(remove_card_from_pile(yourStockPile), yourWorkPile4);
+    add_card_to_pile(remove_card_from_pile(yourStockPile), yourWorkPile5);
 
+    set(ref(db, `lobbies/${lobbyID}/users/${userID}/numobjcards`), 0);
     for (let i = 0; i < NUM_BLITZ_CARDS; i++) {
-        poppedCard = remove_card_from_pile(yourStockPile);
+        let poppedCard = remove_card_from_pile(yourStockPile);
         add_card_to_pile(poppedCard, yourObjectivePile);
-        set(ref(db, `lobbies/${lobbyID}/users/${userID}/objpile`), poppedCard);
     }
-    set(ref(db, `lobbies/${lobbyID}/users/${userID}/numobjcards`), 10);
 
     yourStockPile.style.backgroundImage = "url('/card-pngs/Back\ Red\ 2.png')";
+    set(ref(db, `lobbies/${lobbyID}/users/${userID}/stockpile`), 'facedown');
 });
 
 let clearLake = document.getElementById("clear-lake");
