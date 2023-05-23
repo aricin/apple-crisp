@@ -57,14 +57,7 @@ onAuthStateChanged(auth, (user) => {
 
         onDisconnect(userRef).remove();
     } else {
-        // User signed out
 
-        // This doesn't work. Might need something server side to clear a lobby when the last user leaves
-        // get(ref(db, `lobbies/${lobbyID}/users`)).then((snapshot) => {
-        //     if (!snapshot.exists()) {
-        //         set(ref(db, `lobbies/${lobbyID}`), null);
-        //     }
-        // });
     }
 });
 
@@ -116,7 +109,7 @@ nameField.addEventListener('input', function(e) {
  */
 function buildDeck() {
     let suits = ["Clubs", "Diamond", "Hearts", "Spades"];
-    let values = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]; // Update this base on user preference
+    let values = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]; // Update this based on user preference
     let deck = [];
 
     for (let suit of suits) {
@@ -372,7 +365,7 @@ let draw_card = function(e) {
     }
 }
 
-let reset_animation = function() { // Comment
+let reset_animation = function() {
     yourWastePile.classList.remove("draw-animation");
     yourStockPile.classList.remove("reset-deck");
 }
