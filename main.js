@@ -11,7 +11,6 @@ fetch('/.netlify/functions/getFirebaseConfig')
     firebaseConfig = data;
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    
 
 /* ----- Lobby Stuff ----- */
 let lobbyID;
