@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 firebaseconfig.txt
+
+# Local Netlify folder
+.netlify

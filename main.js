@@ -3,21 +3,15 @@ import { getDatabase, ref, set, push, child, onChildAdded, onChildChanged, onChi
 import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
 
-/* ----- Firebase Stuff ----- */
-const firebaseConfig = {
-    apiKey: import.meta.env.VITE_API_KEY,
-    authDomain: import.meta.env.VITE_AUTH_DOMAIN,
-    databaseURL: import.meta.env.VITE_DATABASE_URL,
-    projectId: import.meta.env.VITE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_APP_ID,
-};
+let firebaseConfig;
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
+fetch('/.netlify/functions/getFirebaseConfig')
+  .then(response => response.json())
+  .then(data => {
+    firebaseConfig = data;
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    
 
 /* ----- Lobby Stuff ----- */
 let lobbyID;
@@ -26,7 +20,7 @@ if (urlParams.get("lobby")) {
     lobbyID = urlParams.get("lobby");
 } else {
     lobbyID = push(child(ref(db), 'lobbies/')).key;
-    window.location.href = 'http://127.0.0.1:5173/?lobby=' + lobbyID;
+    window.location.href = 'https://cardgamer.club/?lobby=' + lobbyID;
 }
 
 
@@ -596,5 +590,7 @@ clearLake.addEventListener("click", () => {
 
 let invite = document.getElementById("invite");
 invite.addEventListener("click", () => {
-    navigator.clipboard.writeText('http://127.0.0.1:5173/?lobby=' + lobbyID);
+    navigator.clipboard.writeText('https://cardgamer.club/?lobby=' + lobbyID);
+});
+
 });
