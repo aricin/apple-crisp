@@ -25,6 +25,7 @@ netlify env:set APP_ID your-app-id
 ### Step 4: Set Firebase Rules
 This is how the app is kept secure. 
 
+```
 {
 	"rules": {
     "lobbies": {
@@ -54,6 +55,7 @@ This is how the app is kept secure.
     }
   }
 }
+```
 
 ### Step 5: Build and Deploy
 ```bash
