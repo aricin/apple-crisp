@@ -22,7 +22,7 @@ netlify env:set MESSAGING_SENDER_ID your-messaging-sender-id
 netlify env:set APP_ID your-app-id
 ```
 
-### Step 4: Set Firebase Rules with the Realtime Database
+### Step 4: Set Firebase Rules within the Realtime Database
 This is how Firebase intends to keep the app secure. 
 
 ```
