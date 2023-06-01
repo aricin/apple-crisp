@@ -1,5 +1,9 @@
 # apple-crisp
 
-Card game inspired by Dutch Blitz and Nertz.
+## How to deploy with Netlify
 
-Deployed with Netlify.
+## Step 1: Install Netlify CLI
+
+```bash
+npm install -g netlify-cli
+```
