@@ -27,7 +27,7 @@ This is how the app is kept secure.
 
 ```
 {
-	"rules": {
+"rules": {
     "lobbies": {
       // Allow any user, including unauthenticated users, to create a new lobby node
       ".write": true,
